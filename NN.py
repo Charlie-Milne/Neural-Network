@@ -143,7 +143,7 @@ class NeuralNetwork():
         #add output layer
         self.layers.append(Layer(numOfOutputs,numOfNodes))
 
-    def calculateOutputs(self, inputs : list):
+    def calculateOutputs(self, inputs : list)->float:
         """
         returns the output of the NN for the given inputs
         
@@ -157,7 +157,7 @@ class NeuralNetwork():
 
         return inputs
     
-    def calculateCost(self,inputs : list, expectedOutput : list):
+    def calculateCost(self,inputs : list, expectedOutput : list)->float:
         """
         returns the overall cost of the NN on the given inputs
         
