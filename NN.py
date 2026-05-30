@@ -99,16 +99,10 @@ class Node():
                 sum += node.weights[self.index] * node.partialDerivative
             gradient *= sum
 
-        if self.activationFunc.__name__ == "relu":
-            # "gradient" of ReLu is 1 if x > 0 and 0 otherwise
-            if (self.weightedSum <= 0):
-                gradient *=0
-        else:
-            # use the outputs that were just generated when calculating the cost
-            gradient *= self.output * (1-self.output) #may be weighted input instead of output
 
-        #limit gradient to between -1 and 1
-        self.partialDerivative = max(-1.0, min(1.0, gradient)) 
+        gradient *= self.output * (1-self.output) #may be weighted input instead of output
+
+        self.partialDerivative = gradient 
 
         for index, weight in enumerate(self.weights.copy()):
 
@@ -291,7 +285,6 @@ class NeuralNetwork():
                 line += f",{node.bias}\n"
                 openFile.write(line)
             openFile.write(f"@Layer\n")
-
 
         openFile.close() 
 
