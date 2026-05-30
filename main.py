@@ -14,25 +14,35 @@ font = pygame.font.Font("freesansbold.ttf",25)
 fontSmall = pygame.font.Font("freesansbold.ttf",16)
 
 openFile = open("mnist.arff","r")
-
-numLayers = 3
-nodesPerLayer = 30
+numLayers = 2
+nodesPerLayer = 128
 numInputs = 784
 numOutputs = 10
-epochs = 1
+epochs = 2
 neuralNet = NN.NeuralNetwork(numLayers,nodesPerLayer,numInputs,numOutputs)
-NNsaveFile = "save.txt"
+NNsaveFile = "saveRelu.txt"
 
 
-def trainOnMNIST(savedNN = "",trainIfExists = False):
+def trainOnMNIST(savedNN = "",trainIfExists = False, save = False):
+    """
+    :param savedNN:the file name of the saved NN and where to save newly trained NN to
+    :type savedNN: string
+    :param trainIdExists: wether or not to use the pre-existing NN
+    :type trainIfExists: bool
+    :param save: wether or not to save newly trained NN
+    :type save: bool
+    """
+    ##try to load given NN
     try:
         neuralNet.loadFromFile(savedNN)
         if not trainIfExists:
             return
     except:
-        print("No saved NN detected")
+        print("Missing or corrupted save file")
+
+    #open training file
     file = open("mnist.arff","r")
-    learnrate = 0.05
+    learnrate = 0.001
     #have to use readline as file is too large to fit into an array
     reachedData = False
     while not reachedData:
@@ -40,8 +50,9 @@ def trainOnMNIST(savedNN = "",trainIfExists = False):
         if line == "@data\n":
             reachedData = True
     
+    #initilise variables
     inputs = []
-    outputs = [0] * 10
+    outputs = [0] * 10 # output[i] will be 1 if the number encoded is i
     imagesTrained = 0
     incorrect = 0
     count = 0
@@ -49,20 +60,21 @@ def trainOnMNIST(savedNN = "",trainIfExists = False):
     previousLine = ""
     while line != "":#haven't finished file (empty line would be "\n")
         line = file.readline()
+        #get an array of all the values
         values = line.rstrip().split(",")
         for index,value in enumerate(values):
             if index == 0 and not done:#if previous value continues onto this line
                 value = previousLine + value
                 done = True
             if value == "":
-                done=  True
+                done = True
                 continue #if line ended with a comma
-            elif index == len(values)-1:
+            elif index == len(values)-1:# last is \n
                 done = False
                 previousLine = value
                 continue
             inputs.append(float(value))
-            count += 1
+            count += 1 #keep track of number of pixels seen
             if count >= (collumns*rows):
                 break
         if count >= (collumns*rows):
@@ -87,7 +99,8 @@ def trainOnMNIST(savedNN = "",trainIfExists = False):
             done = True
 
     print(f"Accuraccy on last {imagesTrained-55000} images: {(1-(incorrect/(imagesTrained-55000)))*100:.2f}%")
-    neuralNet.save(NNsaveFile)
+    if save:
+        neuralNet.save(NNsaveFile)
 
 def testOnMNIST(testSize = 0):
     file = open("mnist.arff","r")
@@ -417,7 +430,7 @@ class displayImage():
 
 if __name__ == "__main__":
     for _ in range(epochs):
-        trainOnMNIST(NNsaveFile,True)
+        trainOnMNIST(NNsaveFile,True,True)
 
     #testOnMNIST(6000)
     screen = displayImage()

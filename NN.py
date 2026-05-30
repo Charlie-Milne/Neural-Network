@@ -1,9 +1,33 @@
 import math
 import random
 import os
+from collections.abc import Callable
+
+def sigmoid(input : float) -> float:
+    """
+    The sigmoid activation function which maps output to value between 0 and 1
+
+    :param input: the input to the function (a nodes weigthed sum/output)
+    :type input: float
+    :returns: the result of the input passed through the sigmoid function
+    :rtpye: float  
+    """
+    return 1/(1+math.exp(-input))
+
+def relu(input : float) -> float:
+    """
+    The ReLu activation function which maps negative numbers to 0 (helps with
+    vanishing gradient problem)
+
+    :param input: the input to the function (a nodes weigthed sum/output)
+    :type input: float
+    :returns: the result of the input passed through the ReLu function
+    :rtpye: float  
+    """
+    return max(input, 0)
 
 class Node():
-    def __init__(self,numOfInputs : int, index : int):
+    def __init__(self,numOfInputs : int, index : int, activationFunction : Callable):
         """
         initializes the weights array and bias to random numbers
         
@@ -11,6 +35,8 @@ class Node():
         :type numOfInputs: int
         :param index: the index of the node within it's layers self.nodes
         :type index: int
+        :param activationFunction: the activation function this node should use
+        :type activationFunction: a function from float to float
         """
         self.index = index
         self.output = 0
@@ -20,8 +46,15 @@ class Node():
 
         self.weights =[]
         for _ in range(numOfInputs):
-            self.weights.append(random.random()*2 -1)
-        self.bias = random.randint(-1,1)
+            #self.weights.append(random.random())
+
+            #use He initialisation to prevent vanishing gradients 
+            # (weighted sum of output becomes vary large so output is basically 0 therefore derivative of sigmoid at output = 0)
+            self.weights.append(random.gauss(0, math.sqrt(2.0 / numOfInputs)))
+        
+        self.bias = 0
+
+        self.activationFunc = activationFunction
     
 
     def calculateOutput(self, inputVector : list):
@@ -29,6 +62,7 @@ class Node():
         calculates the output for the given node
         
         :param inputVector: the outputs for the previous layer in an array
+        :type inputVector: list of floats/ints
         """
         self.previousinputs = inputVector
         total = 0
@@ -38,8 +72,8 @@ class Node():
         total += self.bias
         self.weightedSum = total
 
-        #apply activation function (sigmoid)
-        total = 1/(1+math.exp(-total))
+        #apply activation function
+        total = self.activationFunc(total)
 
         self.output = total
 
@@ -65,10 +99,16 @@ class Node():
                 sum += node.weights[self.index] * node.partialDerivative
             gradient *= sum
 
+        if self.activationFunc.__name__ == "relu":
+            # "gradient" of ReLu is 1 if x > 0 and 0 otherwise
+            if (self.weightedSum <= 0):
+                gradient *=0
+        else:
+            # use the outputs that were just generated when calculating the cost
+            gradient *= self.output * (1-self.output) #may be weighted input instead of output
 
-        gradient *= self.output * (1-self.output) #may be weighted input instead of output
-
-        self.partialDerivative = gradient 
+        #limit gradient to between -1 and 1
+        self.partialDerivative = max(-1.0, min(1.0, gradient)) 
 
         for index, weight in enumerate(self.weights.copy()):
 
@@ -81,7 +121,7 @@ class Node():
         self.bias -= learnRate * self.partialDerivative     
 
 class Layer():
-    def __init__(self,numOfNodes : int,numOfInputs : int):
+    def __init__(self,numOfNodes : int,numOfInputs : int, func : Callable):
         """
         creates an array of Node objects
         
@@ -89,10 +129,12 @@ class Layer():
         :type numOfNodes: int
         :param numOfInputs: the number of nodes in the previous layer
         :type numOfInputs: int
+        :param func: the activation function that should be used for each node in the layer
+        :type output: a function from float to float
         """
         self.nodes = []
         for i in range (numOfNodes):
-            self.nodes.append(Node(numOfInputs,i))
+            self.nodes.append(Node(numOfInputs,i, func))
         self.outputs = [0]*numOfNodes
 
     def calculateOutputs(self,previousLayersOutputs : list):
@@ -134,21 +176,24 @@ class NeuralNetwork():
         :type numOfOutputs: int
         """
         self.layers = []
+        self.activationFunc = relu
         #add first layer (needs different amount of weights since its only inputs are the inputs)
-        self.layers.append(Layer(numOfNodes,numOfInputs))
+        self.layers.append(Layer(numOfNodes,numOfInputs,self.activationFunc))
 
         for i in range(numOfLayers):
-            self.layers.append(Layer(numOfNodes,len(self.layers[i].nodes)))
+            self.layers.append(Layer(numOfNodes,len(self.layers[i].nodes), self.activationFunc))
         
         #add output layer
-        self.layers.append(Layer(numOfOutputs,numOfNodes))
+        self.layers.append(Layer(numOfOutputs,numOfNodes, sigmoid))
 
-    def calculateOutputs(self, inputs : list)->float:
+    def calculateOutputs(self, inputs : list)->list:
         """
         returns the output of the NN for the given inputs
         
         :param inputs: a list of the inputs
         :type inputs: list
+        :returns: the output of the NN
+        :rtype: float
         """
 
         for layer in self.layers:
@@ -165,9 +210,13 @@ class NeuralNetwork():
         :type inputs: list
         :param expectedOutput: the list of the expected outputs of each output node
         :type expectedOutput: list
+        :returns: the result of appying the cost function to the NN with the given inputs and outputs
+        :rtype: float
         """
         output = self.calculateOutputs(inputs)
         cost = 0
+        # cost is the sum of the difference between the excpected output
+        # and real output squared
         for index, output in enumerate(output):
             cost += pow(expectedOutput[index]-output,2)
         return cost
@@ -205,7 +254,7 @@ class NeuralNetwork():
         :param learningRate: the learning rate of the neural network
         :type learningRate: int
         """
-        for repeat in epochs:
+        for repeat in range(epochs):
             for data in trainingSet:
                 self.updateWeights(data[0],data[1],learningRate)
 
@@ -229,12 +278,20 @@ class NeuralNetwork():
         """
         #each line will a specific nodes weigths and then the last number will be it's bias
         openFile = open(fileName,"w")
-        for layer in self.layers:
+
+        #store the activation function used for non output layers
+        openFile.wirte(f"ActivationFunction: f{self.activationFunc.__name__}")
+
+        #save every layer except output like this
+        for index, layer in enumerate(self.layers):
+            if index == len(self.layers)-1:
+                openFile.write(f"@OutputLayer\n")
             for node in layer.nodes:
                 line = ','.join(map(str,node.weights))
                 line += f",{node.bias}\n"
                 openFile.write(line)
             openFile.write(f"@Layer\n")
+
 
         openFile.close() 
 
@@ -249,19 +306,34 @@ class NeuralNetwork():
         
         openFile = open(fileName,"r")
         line = openFile.readline().rstrip()
+
+        #see if NN file says what activation function it uses
+        if line == "ActivationFunction: relu":
+            activationFunc = relu
+            line = openFile.readline().rstrip()
+        elif line == "ActivationFunction: sigmoid":
+            activationFunc = sigmoid
+            line = openFile.readline().rstrip()
+
         newLayers = []
         nodes = []
+
+        activationFunc = relu
+
         while line != '':
             if line == "@Layer":
                 #new layer
                 #add previous layer to list
-                newLayer = Layer(len(nodes),len(nodes[0].weights))
+                newLayer = Layer(len(nodes),len(nodes[0].weights),activationFunc)
                 newLayer.nodes = nodes
                 newLayers.append(newLayer)
                 nodes = []
+            elif line == "@OutputLayer":
+                activationFunc = sigmoid
+                #layers parameter doesn't matter sice we're manually setting the nodes
             else:
                 values = line.split(",")
-                newNode = Node(len(values)-1,len(nodes))
+                newNode = Node(len(values)-1,len(nodes),activationFunc)
                 newNode.weights = list(map(float,values[:-1]))
                 newNode.bias = float(values[-1])
                 nodes.append(newNode)
@@ -276,24 +348,26 @@ class NeuralNetwork():
 class main():
     def __init__(self):
         numOfLayers = 1
-        numOfNodes = 1
+        numOfNodes = 30
 
         inputs = [1,1]
         numOfOutputs = 2
-        expectedOutput = [1,1]
+        expectedOutput = [0,0]
 
         learningRate = 0.2
 
         nn = NeuralNetwork(numOfLayers,numOfNodes,len(inputs),numOfOutputs)
-        nn.print()
+        #nn.print()
         print(nn.calculateCost(inputs,expectedOutput))
 
-        for i in range(20):
+        
+        for _ in range(20):
             nn.updateWeights(inputs, expectedOutput, learningRate)
             print(nn.calculateCost(inputs,expectedOutput))
 
         print(nn.calculateCost(inputs,expectedOutput))
         
-        nn.print()
+       # nn.print()
+
 if __name__ == "__main__":
     main()
