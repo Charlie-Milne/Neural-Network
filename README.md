@@ -30,5 +30,8 @@ Below is an example of what the pygame window looked like before and after testi
 <img width="649" height="800" alt="image" src="https://github.com/user-attachments/assets/36a74409-4850-4e79-a978-c662c7a29037" />
 <img width="646" height="800" alt="image" src="https://github.com/user-attachments/assets/67d07b32-bf2f-4579-aafc-3b50f84bc041" />
 
-Clicking the arrows will then render new handrawn digits from the dataset and allow you to test your NN on it. You can also use the
-draw option to draw your own digits and see what digit the NN thinks you drew.
+Clicking the arrows will then render new hand-drawn digits from the dataset and allow you to test your NN on it. You can also use the draw option to draw your own digits and see what digit the NN thinks you drew.
+<img width="561" height="688" alt="image" src="https://github.com/user-attachments/assets/7a65accc-0265-4428-bf2c-bf62df7c8fd2" /> 
+
+This is what the drawing screen looks like simply hold you left mouse button and drag you cursor to draw your digit. You can then test you AI, clear the screen and go back to the databases digits using the buttons on the bottom.
+
