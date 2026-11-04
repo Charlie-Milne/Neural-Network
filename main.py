@@ -18,9 +18,8 @@ numLayers = 2
 nodesPerLayer = 128
 numInputs = 784
 numOutputs = 10
-epochs = 2
+epochs = 3
 neuralNet = NN.NeuralNetwork(numLayers,nodesPerLayer,numInputs,numOutputs)
-NNsaveFile = "saveRelu.txt"
 
 
 def trainOnMNIST(savedNN = "",trainIfExists = False, save = False):
@@ -100,7 +99,7 @@ def trainOnMNIST(savedNN = "",trainIfExists = False, save = False):
 
     print(f"Accuraccy on last {imagesTrained-55000} images: {(1-(incorrect/(imagesTrained-55000)))*100:.2f}%")
     if save:
-        neuralNet.save(NNsaveFile)
+        neuralNet.save(savedNN)
 
 def testOnMNIST(testSize = 0):
     file = open("mnist.arff","r")
@@ -430,7 +429,7 @@ class displayImage():
 
 if __name__ == "__main__":
     for _ in range(epochs):
-        trainOnMNIST(NNsaveFile,True,True)
+        trainOnMNIST(fileName,True,True)
 
     #testOnMNIST(6000)
     screen = displayImage()

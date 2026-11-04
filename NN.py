@@ -99,8 +99,15 @@ class Node():
                 sum += node.weights[self.index] * node.partialDerivative
             gradient *= sum
 
-
-        gradient *= self.output * (1-self.output) #may be weighted input instead of output
+        #apply derivative of activation function to gradient
+        if self.activationFunc.__name__ == "relu":
+            if self.weightedSum <= 0:
+                gradient = 0
+            #else gradient *= 1 (no change)
+        else:
+            #using sigmoid activation func
+            gradient *= self.output * (1-self.output) #may be weighted input instead of output
+            
 
         self.partialDerivative = gradient 
 
@@ -274,7 +281,7 @@ class NeuralNetwork():
         openFile = open(fileName,"w")
 
         #store the activation function used for non output layers
-        openFile.wirte(f"ActivationFunction: f{self.activationFunc.__name__}")
+        openFile.write(f"ActivationFunction: f{self.activationFunc.__name__}")
 
         #save every layer except output like this
         for index, layer in enumerate(self.layers):

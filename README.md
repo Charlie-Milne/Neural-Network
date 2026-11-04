@@ -7,12 +7,12 @@ Within this project the `NN.py` file contains all the code encapsulating the Neu
 By default the NN framework uses ReLu as the activation function for all nodes in each hidden 
 layer and then uses sigmoid for the final output layer.
 
-To change this simply edit line 173 in `NN.py` to:
+To change this simply edit line 180 in `NN.py` to:
 ```python
 self.activationFunc = sigmoid
 ```
 This will make all the nodes in the hidden layers use the sigmoid activation function. If you also want to change the output
-layers activation function to ReLu you can replace line 181 and 325 with:
+layers activation function to ReLu you can replace line 188 and 332 with:
 ```python
 self.layers.append(Layer(numOfOutputs,numOfNodes, relu))
 activationFunc = relu
