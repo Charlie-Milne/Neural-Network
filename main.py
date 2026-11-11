@@ -77,20 +77,22 @@ def trainOnMNIST(savedNN = "",trainIfExists = False, save = False):
             if count >= (collumns*rows):
                 break
         if count >= (collumns*rows):
-            count = 0
-            outputs[int(values[-1])] = 1
-            neuralNet.updateWeights(inputs,outputs,learnrate)
-
-            imagesTrained += 1
-            if imagesTrained % 100 == 0:
-                print(f"Cost for previous image: {neuralNet.calculateCost(inputs,outputs)}")
-                print(f"Images trained on: {imagesTrained}")
-
             if imagesTrained>=55000:
-                ##test
+                #test (dont train on last images)
                 output = neuralNet.calculateOutputs(inputs)
                 if output.index(max(output)) != int(values[-1]):
                     incorrect += 1
+            else:
+                #train
+                count = 0
+                outputs[int(values[-1])] = 1
+                neuralNet.updateWeights(inputs,outputs,learnrate)
+
+                imagesTrained += 1
+                if imagesTrained % 100 == 0:
+                    print(f"Cost for previous image: {neuralNet.calculateCost(inputs,outputs)}")
+                    print(f"Images trained on: {imagesTrained}")
+
 
             #reset ready for next image
             outputs[int(values[-1])] = 0
